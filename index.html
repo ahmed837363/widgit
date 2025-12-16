@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="ar">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Chatbot Widget Host</title>
+  <style>body{margin:0;background:transparent}</style>
+</head>
+<body>
+  <script>
+    // Read configuration from query string. Example: ?clientId=my_store_123&functionUrl=https%3A%2F%2Fapi.example.com%2Fchat
+    const params = new URLSearchParams(window.location.search);
+    const clientId = params.get('clientId') || '';
+    const functionUrl = params.get('functionUrl') || '';
+    const primaryColor = params.get('primaryColor') || undefined;
+    const position = params.get('position') || undefined;
+    const welcomeMessage = params.get('welcomeMessage') || undefined;
+    const widgetUrl = params.get('widgetUrl') || 'widget.js';
+
+    // Export configuration expected by the widget
+    window.ChatbotConfig = window.ChatbotConfig || {};
+    if (clientId) window.ChatbotConfig.clientId = clientId;
+    if (functionUrl) window.ChatbotConfig.functionUrl = functionUrl;
+    if (primaryColor) window.ChatbotConfig.primaryColor = primaryColor;
+    if (position) window.ChatbotConfig.position = position;
+    if (welcomeMessage) window.ChatbotConfig.welcomeMessage = decodeURIComponent(welcomeMessage);
+
+    // Load the widget script (defaults to widget.js in same folder)
+    const s = document.createElement('script');
+    s.src = widgetUrl;
+    s.async = true;
+    document.head.appendChild(s);
+  </script>
+</body>
+</html>
