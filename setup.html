@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Chatbot Setup</title>
+  <style>
+    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; margin: 24px; max-width: 820px; }
+    label { display: block; font-weight: 600; margin-bottom: 8px; }
+    input { width: 100%; padding: 12px 14px; border: 1px solid #d0d7de; border-radius: 8px; }
+    button { margin-top: 12px; padding: 10px 14px; border: 1px solid #d0d7de; border-radius: 8px; background: #fff; cursor: pointer; }
+    button:disabled { opacity: 0.6; cursor: not-allowed; }
+    pre { white-space: pre-wrap; word-break: break-word; padding: 12px; border: 1px solid #d0d7de; border-radius: 8px; background: #f6f8fa; }
+    .muted { color: #57606a; font-size: 13px; }
+    .row { margin-top: 16px; }
+    .error { color: #b42318; }
+  </style>
+</head>
+<body>
+  <h1>Chatbot Setup</h1>
+  <p class="muted">
+    Enter only your store URL. This page calls your <code>onboard</code> function and returns the ready embed snippet.
+  </p>
+
+  <div class="row">
+    <label for="storeUrl">Store URL</label>
+    <input id="storeUrl" placeholder="https://your-store.example" />
+    <div class="muted">
+      Note: your onboard function must have env vars <code>WIDGET_URL</code> and <code>CHATBOT_FUNCTION_URL</code> set to output a fully-ready snippet.
+    </div>
+    <button id="submit">Create / Update Bot</button>
+  </div>
+
+  <div class="row">
+    <div class="muted">Onboard Function URL</div>
+    <pre id="onboardUrl"></pre>
+    <div class="muted">
+      Configure it by adding <code>?onboardUrl=...</code> to this page URL.
+      Example: <code>setup.html?onboardUrl=https%3A%2F%2F...%2Fexecution</code>
+    </div>
+  </div>
+
+  <div class="row">
+    <h2>Result</h2>
+    <div id="status" class="muted"></div>
+    <pre id="result"></pre>
+  </div>
+
+  <script>
+    const params = new URLSearchParams(window.location.search);
+    const onboardUrl = params.get('onboardUrl') || '';
+
+    const $storeUrl = document.getElementById('storeUrl');
+    const $submit = document.getElementById('submit');
+    const $status = document.getElementById('status');
+    const $result = document.getElementById('result');
+    const $onboardUrl = document.getElementById('onboardUrl');
+
+    $onboardUrl.textContent = onboardUrl || 'MISSING: add ?onboardUrl=...';
+
+    function setStatus(text, isError = false) {
+      $status.textContent = text;
+      $status.className = isError ? 'error' : 'muted';
+    }
+
+    async function run() {
+      const storeUrl = ($storeUrl.value || '').trim();
+      if (!storeUrl) {
+        setStatus('Please enter your store URL.', true);
+        return;
+      }
+      if (!onboardUrl) {
+        setStatus('Missing onboardUrl. Add ?onboardUrl=... to this page URL.', true);
+        return;
+      }
+
+      $submit.disabled = true;
+      $result.textContent = '';
+      setStatus('Creating bot…');
+
+      try {
+        const r = await fetch(onboardUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ storeUrl }),
+        });
+        const data = await r.json().catch(() => ({}));
+        if (!r.ok || !data.success) {
+          setStatus('Failed.', true);
+          $result.textContent = JSON.stringify(data, null, 2);
+          return;
+        }
+
+        setStatus('Done. Copy the embed snippet below.');
+        $result.textContent = data.embedSnippet || JSON.stringify(data, null, 2);
+      } catch (e) {
+        setStatus('Network error.', true);
+        $result.textContent = String(e);
+      } finally {
+        $submit.disabled = false;
+      }
+    }
+
+    $submit.addEventListener('click', run);
+  </script>
+</body>
+</html>
